@@ -1,0 +1,6 @@
+{
+  "name": "Local Food Delivery Platform",
+  "description": "แพลตฟอร์มสั่งอาหารชุมชนสำหรับตำบลเล็กๆ พร้อมระบบลูกค้า ร้านค้า ไรเดอร์ และระบบติดตามออร์เดอร์",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

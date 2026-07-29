@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { Restaurant, MenuItem, Order, OrderStatus } from './src/types.js';
+import { Restaurant, MenuItem, Order, OrderStatus, User } from './src/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,18 +10,43 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // In-Memory Database for Community Delivery Platform
+let users: User[] = [
+  { id: 'usr-admin-1', name: 'แอดมินศูนย์ชุมชน (Admin)', role: 'admin', phone: '080-000-0000', status: 'active', createdAt: '2026-01-01T00:00:00.000Z' },
+  { id: 'usr-merch-jo', name: 'คุณโจ (ครัวคุณโจ)', role: 'merchant', phone: '087-654-3210', restaurantId: 'rest-5', status: 'active', createdAt: '2026-02-10T00:00:00.000Z' },
+  { id: 'usr-merch-1', name: 'ป้าเกศรา (ร้านป้าเกศ)', role: 'merchant', phone: '081-234-5678', restaurantId: 'rest-1', status: 'active', createdAt: '2026-02-12T00:00:00.000Z' },
+  { id: 'usr-rider-1', name: 'พี่ชัย ไรเดอร์บึงบูรพ์', role: 'rider', phone: '084-999-3322', status: 'active', createdAt: '2026-03-01T00:00:00.000Z' },
+  { id: 'usr-rider-2', name: 'ช่างเก่ง ไรเดอร์สายด่วน', role: 'rider', phone: '086-111-4455', status: 'active', createdAt: '2026-03-05T00:00:00.000Z' },
+  { id: 'usr-cust-1', name: 'สมชาย รักบ้านเกิด', role: 'customer', phone: '082-111-2233', address: '99/2 หมู่ 2', status: 'active', createdAt: '2026-03-10T00:00:00.000Z' },
+  { id: 'usr-cust-2', name: 'ป้าสมใจ ตลาดสด', role: 'customer', phone: '085-444-5566', address: 'หมู่ 3', status: 'active', createdAt: '2026-03-12T00:00:00.000Z' },
+];
+
 let restaurants: Restaurant[] = [
+  {
+    id: 'rest-5',
+    name: 'ครัวคุณโจ (อีสาน & อาหารป่า)',
+    category: 'อาหารอีสาน',
+    isOpen: true,
+    phone: '087-654-3210',
+    address: '99/5 หมู่ 1 อ.บึงบูรพ์',
+    locationLandmark: 'ตรงข้ามซอยป่ามะพร้าว ปากทางเข้าบ้านหนองบัว',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80',
+    rating: 4.9,
+    reviewCount: 185,
+    deliveryFee: 15,
+    estPrepTime: '15-20 นาที',
+    ownerName: 'คุณโจ (ครัวคุณโจ)',
+  },
   {
     id: 'rest-1',
     name: 'ร้านป้าเกศ อาหารตามสั่ง',
     category: 'อาหารตามสั่ง',
     isOpen: true,
     phone: '081-234-5678',
-    address: '12/1 หมู่ 2 ต.หนองโคก อ.เมือง',
-    locationLandmark: 'ข้างโรงเรียนบ้านหนองโคก ตรงข้ามร้านซ่อมมอเตอร์ไซค์ช่างเก่ง',
+    address: '12/1 หมู่ 2 อ.บึงบูรพ์',
+    locationLandmark: 'ข้างโรงเรียนบึงบูรพ์ ตรงข้ามร้านซ่อมมอเตอร์ไซค์ช่างเก่ง',
     image: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop&q=80',
     rating: 4.8,
     reviewCount: 142,
@@ -35,7 +60,7 @@ let restaurants: Restaurant[] = [
     category: 'ก๋วยเตี๋ยว',
     isOpen: true,
     phone: '089-876-5432',
-    address: '45 หมู่ 3 ต.หนองโคก อ.เมือง',
+    address: '45 หมู่ 3 อ.บึงบูรพ์',
     locationLandmark: 'ใกล้ตู้ ATM ธ.ก.ส. ปากทางเข้าวัดกูบ',
     image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&auto=format&fit=crop&q=80',
     rating: 4.9,
@@ -50,7 +75,7 @@ let restaurants: Restaurant[] = [
     category: 'อาหารอีสาน',
     isOpen: true,
     phone: '086-555-1234',
-    address: '88/4 หมู่ 1 ต.หนองโคก อ.เมือง',
+    address: '88/4 หมู่ 1 อ.บึงบูรพ์',
     locationLandmark: 'สามแยกต้นโพธิ์ใหญ่ ตรงข้ามศาลากลางหมู่บ้าน',
     image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80',
     rating: 4.7,
@@ -65,7 +90,7 @@ let restaurants: Restaurant[] = [
     category: 'เครื่องดื่ม',
     isOpen: true,
     phone: '090-999-8877',
-    address: '3/9 หมู่ 3 ต.หนองโคก อ.เมือง',
+    address: '3/9 หมู่ 3 อ.บึงบูรพ์',
     locationLandmark: 'หน้าปั๊มหลอดแก้วชุมชน หมู่ที่ 3',
     image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&auto=format&fit=crop&q=80',
     rating: 4.6,
@@ -77,6 +102,177 @@ let restaurants: Restaurant[] = [
 ];
 
 let menuItems: MenuItem[] = [
+  // ร้านครัวคุณโจ (อีสาน & อาหารป่า)
+  {
+    id: 'item-501',
+    restaurantId: 'rest-5',
+    name: 'ต้มแซ่บเนื้อ/หมู',
+    description: 'ต้มแซ่บรสเด็ด ร้อนแรงถึงเครื่องสมุนไพร พริกแห้งและมะนาวสดแท้',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=500&auto=format&fit=crop&q=80',
+    options: [
+      {
+        name: 'เนื้อสัตว์',
+        choices: [
+          { name: 'เนื้อเปื่อย', extraPrice: 0 },
+          { name: 'หมูหมัก', extraPrice: 0 },
+          { name: 'กระดูกอ่อน', extraPrice: 0 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'item-502',
+    restaurantId: 'rest-5',
+    name: 'ต้มขมเนื้อวัวสูตรเด็ด',
+    description: 'ต้มขมเนื้อเปื่อยและเครื่องในวัวแท้ ปรุงดีขมพอดี นัวลึกแบบอีสานแท้',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-503',
+    restaurantId: 'rest-5',
+    name: 'ต้มไก่บ้านใบมะขามอ่อน',
+    description: 'ไก่บ้านแท้เนื้อแน่น เคี่ยวใบมะขามอ่อน รสเปรี้ยวกลมกล่อม หอมสมุนไพร',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-504',
+    restaurantId: 'rest-5',
+    name: 'ต้มส้มกบนาธรรมชาติ',
+    description: 'กบนาเนื้อแน่น ต้มส้มปรุงรสเปรี้ยวแซ่บจัดจ้านสไตล์อาหารป่า',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-505',
+    restaurantId: 'rest-5',
+    name: 'ต้มปลาไหลใบระกากำลัง',
+    description: 'ต้มปลาไหลสด เครื่องแกงป่าแน่น รสชาติเข้มข้นถึงใจ',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-506',
+    restaurantId: 'rest-5',
+    name: 'แกงอ่อมเนื้อ/หมู สมุนไพรบ้าน',
+    description: 'แกงอ่อมผักรวม ผักชีลาวหอมๆ นัวน้ำปลาร้าต้มสุกเข้มข้น',
+    price: 60,
+    category: 'กับข้าว',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-507',
+    restaurantId: 'rest-5',
+    name: 'ลาบเนื้อ / หมู / เป็ด',
+    description: 'ลาบปรุงสด ข้าวคั่วทำเองหอมใหม่ พริกแห้งป่น รสจัดจ้าน',
+    price: 60,
+    category: 'เมนูอีสาน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=500&auto=format&fit=crop&q=80',
+    options: [
+      {
+        name: 'ชนิดเนื้อ',
+        choices: [
+          { name: 'ลาบเนื้อวัว', extraPrice: 0 },
+          { name: 'ลาบหมู', extraPrice: 0 },
+          { name: 'ลาบเป็ด', extraPrice: 0 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'item-508',
+    restaurantId: 'rest-5',
+    name: 'ก้อยเนื้อ (ดิบ / คั่ว)',
+    description: 'ก้อยเนื้อวัวสด ปรุงดีกลิ่นหอมข้าวคั่ว มีทั้งแบบดิบและแบบคั่วสุก',
+    price: 60,
+    category: 'เมนูอีสาน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-509',
+    restaurantId: 'rest-5',
+    name: 'ซอยจุ๊เนื้อสด + แจ่วขม',
+    description: 'เนื้อสดแล่บาง พร้อมตับสด น้ำจิ้มแจ่วขมและแจ่วส้ม พร้อมผักสดสดๆ',
+    price: 60,
+    category: 'เมนูอีสาน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-510',
+    restaurantId: 'rest-5',
+    name: 'กบทอดกระเทียมพริกไทย',
+    description: 'กบนาทอดกรอบนอกนุ่มใน กระเทียมเจียวหอมฟ้อง รสชาติเค็มมันอร่อย',
+    price: 60,
+    category: 'เมนูอีสาน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-511',
+    restaurantId: 'rest-5',
+    name: 'ขนมจีนน้ำยากะทิ / เขียวหวาน',
+    description: 'ขนมจีนเส้นสด น้ำยากะทิปลาช่อนแท้ หรือ แกงเขียวหวานเข้มข้น',
+    price: 40,
+    category: 'ขนมจีนน้ำยา',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-512',
+    restaurantId: 'rest-5',
+    name: 'แจ่วฮ้อนชุดเนื้อ (พร้อมผัก + น้ำจิ้มแจ่ว)',
+    description: 'แจ่วฮ้อนอีสานแท้ ซุปสมุนไพรเข้มข้น ชุดเนื้อสไลซ์ ผักรวม และวุ้นเส้น',
+    price: 180,
+    category: 'แจ่วฮ้อน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80',
+    options: [
+      {
+        name: 'ขนาดชุด',
+        choices: [
+          { name: 'ชุดเล็ก (1-2 ท่าน)', extraPrice: 0 },
+          { name: 'ชุดกลาง (2-3 ท่าน)', extraPrice: 70 },
+          { name: 'ชุดใหญ่ (3-4 ท่าน)', extraPrice: 170 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'item-513',
+    restaurantId: 'rest-5',
+    name: 'แจ่วฮ้อนชุดหมู',
+    description: 'แจ่วฮ้อนซุปสมุนไพรหม้อดิน พร้อมหมูหมักนุ่ม ผักสดและแจ่วสูตรครัวคุณโจ',
+    price: 180,
+    category: 'แจ่วฮ้อน',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'item-514',
+    restaurantId: 'rest-5',
+    name: 'ชาไทยขวดเย็น / ชาเขียว / โกโก้',
+    description: 'เครื่องดื่มขวดสดชื่น ชาไทย ชาเขียว โกโก้ เก๊กฮวย ลำไย ชามะนาว',
+    price: 20,
+    category: 'เครื่องดื่ม',
+    isAvailable: true,
+    image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=500&auto=format&fit=crop&q=80',
+  },
   // ร้านป้าเกศ
   {
     id: 'item-101',
@@ -356,6 +552,50 @@ app.get('/api/restaurants', (req, res) => {
   res.json({ success: true, data: restaurants });
 });
 
+// Create restaurant (Admin/Merchant)
+app.post('/api/restaurants', (req, res) => {
+  const { name, category, phone, address, locationLandmark, image, ownerName, deliveryFee, estPrepTime } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ success: false, message: 'กรุณากรอกชื่อร้านและเบอร์โทรศัพท์' });
+  }
+  const newRest: Restaurant = {
+    id: `rest-${Date.now()}`,
+    name,
+    category: category || 'ทั่วไป',
+    isOpen: true,
+    phone,
+    address: address || 'อำเภอบึงบูรพ์',
+    locationLandmark: locationLandmark || 'จุดสังเกตในชุมชน',
+    image: image || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80',
+    rating: 5.0,
+    reviewCount: 1,
+    deliveryFee: Number(deliveryFee) || 15,
+    estPrepTime: estPrepTime || '15-20 นาที',
+    ownerName: ownerName || 'เจ้าของร้าน',
+  };
+  restaurants.unshift(newRest);
+  res.json({ success: true, data: newRest });
+});
+
+// Update restaurant
+app.put('/api/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  const index = restaurants.findIndex((r) => r.id === id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'ไม่พบร้านค้านี้' });
+  }
+  restaurants[index] = { ...restaurants[index], ...req.body };
+  res.json({ success: true, data: restaurants[index] });
+});
+
+// Delete restaurant
+app.delete('/api/restaurants/:id', (req, res) => {
+  const { id } = req.params;
+  restaurants = restaurants.filter((r) => r.id !== id);
+  menuItems = menuItems.filter((m) => m.restaurantId !== id);
+  res.json({ success: true, message: 'ลบร้านค้าและเมนูทั้งหมดเรียบร้อยแล้ว' });
+});
+
 // Toggle restaurant status (Open / Closed)
 app.put('/api/restaurants/:id/toggle', (req, res) => {
   const { id } = req.params;
@@ -365,6 +605,62 @@ app.put('/api/restaurants/:id/toggle', (req, res) => {
   }
   rest.isOpen = !rest.isOpen;
   res.json({ success: true, data: rest });
+});
+
+// --- ADMIN SYSTEM ROUTES ---
+app.get('/api/admin/users', (req, res) => {
+  res.json({ success: true, data: users });
+});
+
+app.patch('/api/admin/users/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const user = users.find((u) => u.id === id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้นี้' });
+  }
+  user.status = status;
+  res.json({ success: true, data: user });
+});
+
+app.patch('/api/admin/users/:id/role', (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const user = users.find((u) => u.id === id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้นี้' });
+  }
+  user.role = role;
+  res.json({ success: true, data: user });
+});
+
+app.get('/api/admin/stats', (req, res) => {
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.status === 'delivered' || o.paymentStatus === 'paid' ? o.totalAmount : 0), 0);
+  const totalOrders = orders.length;
+  const completedOrders = orders.filter((o) => o.status === 'delivered').length;
+  const activeOrders = orders.filter((o) => ['pending', 'preparing', 'ready_for_pickup', 'out_for_delivery'].includes(o.status)).length;
+  const totalMerchants = restaurants.length;
+  const totalRiders = users.filter((u) => u.role === 'rider').length;
+  const totalUsers = users.length;
+
+  res.json({
+    success: true,
+    data: {
+      totalRevenue,
+      totalOrders,
+      completedOrders,
+      activeOrders,
+      totalMerchants,
+      totalRiders,
+      totalUsers,
+    },
+  });
+});
+
+app.delete('/api/orders/:id', (req, res) => {
+  const { id } = req.params;
+  orders = orders.filter((o) => o.id !== id);
+  res.json({ success: true, message: 'ลบรายการสั่งซื้อเรียบร้อยแล้ว' });
 });
 
 // Get menu items (optionally filtered by restaurantId)

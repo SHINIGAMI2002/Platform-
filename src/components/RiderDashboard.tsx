@@ -25,7 +25,7 @@ interface RiderDashboardProps {
 export const RiderDashboard: React.FC<RiderDashboardProps> = ({ orders, onDataChanged }) => {
   const [riderInfo] = useState({
     id: 'rider-1',
-    name: 'พี่ชัย ไรเดอร์หนองโคก',
+    name: 'พี่ชัย ไรเดอร์บึงบูรพ์',
     phone: '084-999-3322',
     vehicle: 'เวฟ 110i สีส้ม (ขก-8891)',
   });

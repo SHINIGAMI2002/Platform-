@@ -1,9 +1,9 @@
 import React from 'react';
-import { ShoppingBag, Store, Bike, BookOpen, MapPin, Sparkles } from 'lucide-react';
+import { ShoppingBag, Store, Bike, MapPin, ShieldCheck } from 'lucide-react';
 
 interface NavbarProps {
-  activeTab: 'customer' | 'merchant' | 'rider' | 'guide';
-  setActiveTab: (tab: 'customer' | 'merchant' | 'rider' | 'guide') => void;
+  activeTab: 'customer' | 'merchant' | 'rider' | 'admin';
+  setActiveTab: (tab: 'customer' | 'merchant' | 'rider' | 'admin') => void;
   cartCount: number;
   activeOrderCount: number;
   pendingMerchantOrders: number;
@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 bg-clip-text text-transparent">
-                  หนองโคก Express
+                  บึงบูรพ์ Express
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-semibold bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full">
                   ระบบชุมชน
@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-orange-400" />
-                ตำบลหนองโคก • ส่งถึงบ้านไร้หลง
+                อำเภอบึงบูรพ์ • ส่งถึงบ้านไร้หลง
               </p>
             </div>
           </div>
@@ -102,18 +102,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            {/* Tech Guide & DB Schema Button */}
+            {/* Admin Dashboard Button */}
             <button
-              onClick={() => setActiveTab('guide')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'guide'
-                  ? 'bg-slate-700 text-amber-300 border border-amber-500/30'
-                  : 'text-slate-400 hover:text-amber-200 hover:bg-slate-800'
+              onClick={() => setActiveTab('admin')}
+              className={`relative flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'admin'
+                  ? 'bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
-              title="ดูคู่มือสถาปัตยกรรม DB Schema และวิธีติดตั้ง"
             >
-              <BookOpen className="w-4 h-4 text-amber-400" />
-              <span className="hidden lg:inline text-xs">คู่มือเทคนิค & DB</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="hidden md:inline">แอดมิน</span>
             </button>
           </nav>
         </div>

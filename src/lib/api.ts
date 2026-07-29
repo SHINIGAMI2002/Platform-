@@ -86,3 +86,75 @@ export async function updateOrderStatus(
   const json = await res.json();
   return json.data;
 }
+
+export async function deleteOrder(id: string): Promise<boolean> {
+  const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  return json.success;
+}
+
+export async function createRestaurant(data: Partial<Restaurant>): Promise<Restaurant> {
+  const res = await fetch('/api/restaurants', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+export async function updateRestaurant(id: string, data: Partial<Restaurant>): Promise<Restaurant> {
+  const res = await fetch(`/api/restaurants/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+export async function deleteRestaurant(id: string): Promise<boolean> {
+  const res = await fetch(`/api/restaurants/${id}`, { method: 'DELETE' });
+  const json = await res.json();
+  return json.success;
+}
+
+export async function fetchUsers(): Promise<any[]> {
+  const res = await fetch('/api/admin/users');
+  const json = await res.json();
+  return json.data || [];
+}
+
+export async function updateUserStatus(id: string, status: 'active' | 'suspended'): Promise<any> {
+  const res = await fetch(`/api/admin/users/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+export async function updateUserRole(id: string, role: string): Promise<any> {
+  const res = await fetch(`/api/admin/users/${id}/role`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role }),
+  });
+  const json = await res.json();
+  return json.data;
+}
+
+export async function fetchAdminStats(): Promise<{
+  totalRevenue: number;
+  totalOrders: number;
+  completedOrders: number;
+  activeOrders: number;
+  totalMerchants: number;
+  totalRiders: number;
+  totalUsers: number;
+}> {
+  const res = await fetch('/api/admin/stats');
+  const json = await res.json();
+  return json.data;
+}

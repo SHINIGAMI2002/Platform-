@@ -22,6 +22,13 @@ import {
   X,
   Store,
   Bike,
+  History,
+  Calendar,
+  Receipt,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  FileText,
 } from 'lucide-react';
 import { createOrder } from '../lib/api';
 
@@ -53,7 +60,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   // Checkout Form State
   const [customerName, setCustomerName] = useState<string>('สมชาย รักบ้านเกิด');
   const [customerPhone, setCustomerPhone] = useState<string>('082-111-2233');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('บ้านเลขที่ 99/2 หมู่ 2 ต.หนองโคก');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('บ้านเลขที่ 99/2 หมู่ 2 อ.บึงบูรพ์');
   const [deliveryLandmark, setDeliveryLandmark] = useState<string>(
     'บ้านปูนสองชั้นหลังสีฟ้า มีต้นมะม่วงใหญ่หน้าบ้าน ใกล้ศาลากลางหมู่บ้าน'
   );
@@ -62,6 +69,73 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
   
   // Tracking view
   const [activeTrackingOrderId, setActiveTrackingOrderId] = useState<string | null>(null);
+
+  // Navigation & Order History State
+  const [mainTab, setMainTab] = useState<'browse' | 'history'>('browse');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  // Date formatter helper
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return dateString;
+      return d.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Reorder helper
+  const handleReorder = (order: Order) => {
+    const targetRest = restaurants.find((r) => r.id === order.restaurantId);
+    if (!targetRest) {
+      alert('ไม่พบข้อมูลร้านค้านี้ในระบบ');
+      return;
+    }
+    if (!targetRest.isOpen) {
+      alert('ร้านค้านี้ปิดให้บริการชั่วคราวในขณะนี้');
+      return;
+    }
+
+    const newCartItems: CartItem[] = order.items.map((item, idx) => ({
+      id: `cart-reorder-${Date.now()}-${idx}`,
+      menuItemId: item.menuItemId,
+      restaurantId: order.restaurantId,
+      restaurantName: order.restaurantName,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      note: item.note,
+      selectedOptions: item.selectedOptions,
+    }));
+
+    setSelectedRestaurant(targetRest);
+    setCart(newCartItems);
+    setMainTab('browse');
+    setIsCartOpen(true);
+  };
+
+  // Filter history orders
+  const filteredHistoryOrders = orders.filter((order) => {
+    if (historyFilter === 'active') {
+      return ['pending', 'preparing', 'ready_for_pickup', 'out_for_delivery'].includes(order.status);
+    }
+    if (historyFilter === 'delivered') {
+      return order.status === 'delivered';
+    }
+    if (historyFilter === 'cancelled') {
+      return order.status === 'cancelled';
+    }
+    return true;
+  });
 
   // Categories list
   const categories = ['ทั้งหมด', 'อาหารตามสั่ง', 'ก๋วยเตี๋ยว', 'อาหารอีสาน', 'เครื่องดื่ม'];
@@ -254,6 +328,48 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Customer Sub-Navigation Tabs */}
+        {!activeTrackingOrderId && (
+          <div className="flex items-center space-x-2 border-b border-slate-200 pb-4 mb-6">
+            <button
+              onClick={() => {
+                setMainTab('browse');
+                setSelectedRestaurant(null);
+              }}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                mainTab === 'browse'
+                  ? 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Store className="w-4 h-4" />
+              <span>สั่งอาหาร / เลือกร้านค้า</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setMainTab('history');
+                setSelectedRestaurant(null);
+              }}
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                mainTab === 'history'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <History className="w-4 h-4 text-amber-400" />
+              <span>ประวัติการสั่งซื้อ</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] ${
+                  mainTab === 'history' ? 'bg-amber-400 text-slate-950 font-extrabold' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                {orders.length}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* If Customer is viewing an active order tracking screen */}
         {activeTrackingOrderId && activeOrderToTrack ? (
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden mb-8">
@@ -430,6 +546,248 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+        ) : mainTab === 'history' ? (
+          /* --- ORDER HISTORY VIEW --- */
+          <div className="space-y-6">
+            {/* Order History Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-bold mb-2">
+                  <History className="w-3.5 h-3.5 text-amber-400" /> ประวัติรายการสั่งซื้อทั้งหมด
+                </div>
+                <h1 className="text-2xl font-black">ประวัติการสั่งซื้อของคุณ</h1>
+                <p className="text-xs text-slate-300 mt-1">
+                  ตรวจสอบย้อนหลัง รายละเอียดราคา รายการอาหาร เวลาจัดส่ง และสั่งซื้อซ้ำได้ทันที
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                <Receipt className="w-6 h-6 text-orange-400 shrink-0" />
+                <div>
+                  <p className="text-[10px] text-slate-400">คำสั่งซื้อรวมทั้งหมด</p>
+                  <p className="text-lg font-black text-amber-400">{orders.length} ออร์เดอร์</p>
+                </div>
+              </div>
+            </div>
+
+            {/* History Filter Pills */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center space-x-1 overflow-x-auto scrollbar-none">
+                <button
+                  onClick={() => setHistoryFilter('all')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    historyFilter === 'all'
+                      ? 'bg-slate-900 text-white shadow'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  ทั้งหมด ({orders.length})
+                </button>
+                <button
+                  onClick={() => setHistoryFilter('active')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    historyFilter === 'active'
+                      ? 'bg-amber-500 text-slate-950 shadow'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  กำลังดำเนินการ ({orders.filter(o => ['pending','preparing','ready_for_pickup','out_for_delivery'].includes(o.status)).length})
+                </button>
+                <button
+                  onClick={() => setHistoryFilter('delivered')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    historyFilter === 'delivered'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  จัดส่งสำเร็จ ({orders.filter(o => o.status === 'delivered').length})
+                </button>
+                <button
+                  onClick={() => setHistoryFilter('cancelled')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+                    historyFilter === 'cancelled'
+                      ? 'bg-rose-600 text-white shadow'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  ยกเลิกแล้ว ({orders.filter(o => o.status === 'cancelled').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Orders List */}
+            {filteredHistoryOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                  <History className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">ไม่พบประวัติการสั่งซื้อในหมวดหมู่นี้</h3>
+                  <p className="text-xs text-slate-500 mt-1">คุณยังไม่มีรายการสั่งซื้อในหมวดนี้ หรือยังไม่ได้เริ่มสั่งซื้อ</p>
+                </div>
+                <button
+                  onClick={() => setMainTab('browse')}
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-slate-950 text-xs font-bold rounded-xl shadow transition"
+                >
+                  ไปเลือกร้านอาหารเลย
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredHistoryOrders.map((order) => {
+                  const isExpanded = expandedOrderId === order.id;
+                  const isActiveOrder = ['pending', 'preparing', 'ready_for_pickup', 'out_for_delivery'].includes(order.status);
+
+                  return (
+                    <div
+                      key={order.id}
+                      className={`bg-white rounded-2xl border transition-all overflow-hidden ${
+                        isActiveOrder
+                          ? 'border-amber-400 shadow-md ring-1 ring-amber-400/30'
+                          : 'border-slate-200 shadow-sm hover:border-slate-300'
+                      }`}
+                    >
+                      {/* Card Main Info Bar */}
+                      <div className="p-4 sm:p-5 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2.5 bg-orange-50 text-orange-600 rounded-xl border border-orange-100">
+                              <Store className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="font-extrabold text-slate-900 text-base">{order.restaurantName}</span>
+                                <span className="text-xs font-bold text-slate-400">#{order.orderNumber}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                <span>เวลาสั่งซื้อ: {formatDate(order.createdAt)}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            {getStatusBadge(order.status)}
+                          </div>
+                        </div>
+
+                        {/* Items preview */}
+                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                          <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                            <span>รายการอาหารที่สั่ง ({order.items.length} รายการ):</span>
+                            <span className="text-orange-600 font-extrabold text-sm">฿{order.totalAmount} บาท</span>
+                          </div>
+                          <ul className="divide-y divide-slate-200/60 text-xs">
+                            {order.items.map((item, idx) => (
+                              <li key={idx} className="py-1.5 flex items-start justify-between">
+                                <div className="flex-1 pr-2">
+                                  <span className="font-semibold text-slate-800">{item.name}</span>
+                                  <span className="text-slate-500 ml-1.5">x{item.quantity}</span>
+                                  {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                    <p className="text-[11px] text-orange-600 font-medium">
+                                      {item.selectedOptions.map((opt) => `${opt.optionName}: ${opt.choiceName}`).join(', ')}
+                                    </p>
+                                  )}
+                                  {item.note && (
+                                    <p className="text-[11px] text-amber-700 italic">"{item.note}"</p>
+                                  )}
+                                </div>
+                                <span className="font-bold text-slate-700">฿{item.price * item.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Action Row */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                          <div className="text-xs text-slate-500 flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-700 font-medium">
+                              {order.paymentMethod === 'promptpay' ? '💳 โอน PromptPay' : '💵 เก็บเงินปลายทาง (COD)'}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span>ส่งที่: {order.deliveryAddress}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            {isActiveOrder && (
+                              <button
+                                onClick={() => setActiveTrackingOrderId(order.id)}
+                                className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-bold text-xs rounded-lg shadow flex items-center gap-1 transition"
+                              >
+                                <Truck className="w-3.5 h-3.5" /> ติดตามสถานะสด
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleReorder(order)}
+                              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg shadow-sm flex items-center gap-1 transition"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 text-amber-400" /> สั่งซื้อซ้ำ
+                            </button>
+
+                            <button
+                              onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-lg flex items-center gap-1 transition"
+                            >
+                              {isExpanded ? (
+                                <>ซ่อน <ChevronUp className="w-3.5 h-3.5" /></>
+                              ) : (
+                                <>รายละเอียด <ChevronDown className="w-3.5 h-3.5" /></>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded Details Drawer inside Card */}
+                        {isExpanded && (
+                          <div className="mt-4 pt-4 border-t border-slate-200 space-y-3 bg-slate-50/80 -mx-4 -mb-4 p-4 rounded-b-2xl text-xs">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {/* Destination & Landmark */}
+                              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                                <p className="font-bold text-slate-800 flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 text-orange-500" /> สถานที่จัดส่ง
+                                </p>
+                                <p className="text-slate-900 font-semibold">{order.customerName} ({order.customerPhone})</p>
+                                <p className="text-slate-600">{order.deliveryAddress}</p>
+                                <p className="text-amber-800 font-medium bg-amber-50 p-1.5 rounded border border-amber-200 mt-1">
+                                  📍 จุดสังเกต: {order.deliveryLandmark}
+                                </p>
+                              </div>
+
+                              {/* Payment & Delivery Summary */}
+                              <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                                <p className="font-bold text-slate-800 flex items-center gap-1">
+                                  <FileText className="w-3.5 h-3.5 text-orange-500" /> สรุปค่าใช้จ่าย
+                                </p>
+                                <div className="flex justify-between text-slate-600 pt-1">
+                                  <span>ค่าอาหาร:</span>
+                                  <span>฿{order.subtotal}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>ค่าจัดส่งในตำบล:</span>
+                                  <span>฿{order.deliveryFee}</span>
+                                </div>
+                                <div className="flex justify-between font-extrabold text-slate-900 text-sm pt-1 border-t border-slate-100">
+                                  <span>ยอดรวมสุทธิ:</span>
+                                  <span className="text-orange-600">฿{order.totalAmount}</span>
+                                </div>
+                                {order.riderName && (
+                                  <div className="p-1.5 bg-emerald-50 text-emerald-900 rounded border border-emerald-200 mt-1 flex items-center gap-1">
+                                    <Bike className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>ไรเดอร์ผู้จัดส่ง: <strong>{order.riderName}</strong> ({order.riderPhone})</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : selectedRestaurant ? (
           /* --- Restaurant Detail & Menu View --- */

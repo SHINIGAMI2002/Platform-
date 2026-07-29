@@ -3,12 +3,12 @@ import { Navbar } from './components/Navbar';
 import { CustomerPortal } from './components/CustomerPortal';
 import { MerchantDashboard } from './components/MerchantDashboard';
 import { RiderDashboard } from './components/RiderDashboard';
-import { TechGuideView } from './components/TechGuideView';
+import { AdminDashboard } from './components/AdminDashboard';
 import { Restaurant, MenuItem, Order } from './types';
 import { fetchRestaurants, fetchMenuItems, fetchOrders } from './lib/api';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'customer' | 'merchant' | 'rider' | 'guide'>('customer');
+  const [activeTab, setActiveTab] = useState<'customer' | 'merchant' | 'rider' | 'admin'>('customer');
   
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -103,7 +103,13 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'guide' && <TechGuideView />}
+        {activeTab === 'admin' && (
+          <AdminDashboard
+            restaurants={restaurants}
+            orders={orders}
+            onDataChanged={loadData}
+          />
+        )}
       </main>
     </div>
   );

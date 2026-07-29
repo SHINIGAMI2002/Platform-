@@ -607,14 +607,53 @@ export const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700">รูปภาพ URL (เว้นว่างเพื่อใช้รูปตัวอย่าง)</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={newItemImage}
-                  onChange={(e) => setNewItemImage(e.target.value)}
-                  className="w-full mt-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500"
-                />
+                <label className="text-xs font-bold text-slate-700 block mb-1">รูปภาพอาหาร (อัปโหลดรูปจากเครื่อง หรือ ใส่ URL)</label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 px-3 bg-amber-50 border border-dashed border-amber-300 rounded-xl text-amber-800 text-xs font-bold hover:bg-amber-100 transition">
+                      <Plus className="w-4 h-4" />
+                      <span>เลือกไฟล์รูปจากมือถือ / คอมพิวเตอร์</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === 'string') {
+                                setNewItemImage(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="หรือวาง URL รูปภาพ (https://...)"
+                    value={newItemImage}
+                    onChange={(e) => setNewItemImage(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500"
+                  />
+
+                  {newItemImage && (
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 shadow-sm mt-1">
+                      <img src={newItemImage} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setNewItemImage('')}
+                        className="absolute top-1 right-1 bg-slate-900/80 text-white rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="pt-3 flex justify-end space-x-2">

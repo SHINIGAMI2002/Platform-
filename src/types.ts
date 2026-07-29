@@ -1,4 +1,4 @@
-export type UserRole = 'customer' | 'merchant' | 'rider';
+export type UserRole = 'customer' | 'merchant' | 'rider' | 'admin';
 
 export interface User {
   id: string;
@@ -8,6 +8,8 @@ export interface User {
   address?: string;
   landmark?: string;
   restaurantId?: string;
+  status: 'active' | 'suspended';
+  createdAt?: string;
 }
 
 export interface Restaurant {
